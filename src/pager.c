@@ -1,435 +1,505 @@
-/* UNIVERSIDADE FEDERAL DE MINAS GERAIS     *
- * DEPARTAMENTO DE CIENCIA DA COMPUTACAO    */
-
-#include "pager.h"
-#include "mmu.h"
-
+#include <sys/types.h>
 #include <sys/mman.h>
-#include <assert.h>
-#include <errno.h>
+#include <unistd.h>
 #include <pthread.h>
-#include <stdio.h>
+#include <errno.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <stdio.h>
 
-/* Estrutura para representar uma página virtual */
-typedef struct page {
-    void *vaddr;           /* Endereço virtual da página */
-    int frame;             /* Quadro de memória física (-1 se não residente) */
-    int disk_block;        /* Bloco no disco (-1 se não alocado) */
-    int present;           /* 1 se está na memória física, 0 caso contrário */
-    int dirty;             /* 1 se foi modificada, 0 caso contrário */
-    int referenced;        /* Bit de referência para segunda chance */
-    int zero_filled;       /* 1 se já foi inicializada com zeros */
-} page_t;
+#include "mmu.h"
+#include "pager.h"
 
-/* Estrutura para representar um processo */
-typedef struct process {
+#define MAX_PROCS 128
+#define MAX_PAGES 256   /* 1MiB / 4KiB = 256 páginas */
+
+/* Informação de cada frame físico */
+typedef struct {
+    int used;           /* frame está em uso */
+    pid_t pid;          /* dono do frame */
+    int page;           /* índice da página virtual do processo */
+    int ref;            /* bit de referência (segunda chance) */
+    int prot;           /* PROT_NONE, PROT_READ ou PROT_READ|PROT_WRITE */
+} FrameInfo;
+
+/* Informação de cada bloco de disco */
+typedef struct {
+    int used;
     pid_t pid;
-    page_t *pages;         /* Array de páginas do processo */
-    int num_pages;         /* Número de páginas alocadas */
-    int max_pages;         /* Capacidade do array de páginas */
-} process_t;
+    int page;           /* página virtual correspondente */
+} BlockInfo;
 
-/* Variáveis globais */
-static int NFRAMES;        /* Número de quadros de memória física */
-static int NBLOCKS;        /* Número de blocos no disco */
-static size_t PAGESIZE;    /* Tamanho da página */
+/* Informação de cada página virtual de um processo */
+typedef struct {
+    int allocated;      /* página foi alocada via pager_extend */
+    int resident;       /* está em algum frame físico? */
+    int frame;          /* índice do frame, se resident */
+    int disk_block;     /* bloco de disco reservado */
+    int in_disk;        /* conteúdo válido salvo em disco? */
+    int dirty;          /* página foi modificada desde o último write em disco? */
+} PageInfo;
 
-static int *frame_owner;   /* PID do dono de cada quadro (-1 se livre) */
-static int *frame_page;    /* Índice da página em cada quadro */
-static int *block_used;    /* 1 se o bloco está em uso, 0 caso contrário */
+/* Informação de cada processo conhecido pelo pager */
+typedef struct {
+    int used;
+    pid_t pid;
+    int npages;                 /* número de páginas alocadas */
+    PageInfo pages[MAX_PAGES];
+} ProcInfo;
 
-static process_t *processes[256]; /* Array de processos (máx 256) */
-static int num_processes = 0;
+/* ------------------------------------------------------------------ */
+/* Estado global do pager                                             */
+/* ------------------------------------------------------------------ */
 
-static int clock_hand = 0; /* Ponteiro do algoritmo clock */
+static FrameInfo *frames = NULL;
+static BlockInfo *blocks = NULL;
+static int g_nframes = 0;
+static int g_nblocks = 0;
+static long g_pagesize = 0;
+static int clock_hand = 0;          /* ponteiro do algoritmo clock */
 
-static pthread_mutex_t pager_mutex = PTHREAD_MUTEX_INITIALIZER;
+static ProcInfo procs[MAX_PROCS];
 
-/* Funções auxiliares */
-static process_t *find_process(pid_t pid);
-static int alloc_frame(void);
-static int alloc_disk_block(void);
-static void free_frame(int frame);
-static void free_disk_block(int block);
-static int evict_page(void);
-//static void handle_page_access(pid_t pid, page_t *page, int write_access);
+static pthread_mutex_t pager_lock = PTHREAD_MUTEX_INITIALIZER;
 
-void pager_init(int nframes, int nblocks) {
-    NFRAMES = nframes;
-    NBLOCKS = nblocks;
-    PAGESIZE = sysconf(_SC_PAGESIZE);
-    
-    /* Inicializa arrays de controle de quadros */
-    frame_owner = malloc(NFRAMES * sizeof(int));
-    frame_page = malloc(NFRAMES * sizeof(int));
-    for (int i = 0; i < NFRAMES; i++) {
-        frame_owner[i] = -1;
-        frame_page[i] = -1;
+/* ------------------------------------------------------------------ */
+/* Funções auxiliares                                                 */
+/* ------------------------------------------------------------------ */
+
+static ProcInfo *find_proc(pid_t pid) {
+    for (int i = 0; i < MAX_PROCS; i++) {
+        if (procs[i].used && procs[i].pid == pid)
+            return &procs[i];
     }
-    
-    /* Inicializa array de controle de blocos de disco */
-    block_used = malloc(NBLOCKS * sizeof(int));
-    for (int i = 0; i < NBLOCKS; i++) {
-        block_used[i] = 0;
-    }
-    
-    /* Inicializa array de processos */
-    for (int i = 0; i < 256; i++) {
-        processes[i] = NULL;
-    }
+    return NULL;
 }
 
-void pager_create(pid_t pid) {
-    pthread_mutex_lock(&pager_mutex);
-    
-    process_t *proc = malloc(sizeof(process_t));
-    proc->pid = pid;
-    proc->num_pages = 0;
-    proc->max_pages = 16; /* Capacidade inicial */
-    proc->pages = malloc(proc->max_pages * sizeof(page_t));
-    
-    /* Adiciona processo ao array */
-    processes[num_processes++] = proc;
-    
-    pthread_mutex_unlock(&pager_mutex);
-}
-
-void *pager_extend(pid_t pid) {
-    pthread_mutex_lock(&pager_mutex);
-    
-    process_t *proc = find_process(pid);
-    if (!proc) {
-        pthread_mutex_unlock(&pager_mutex);
-        return NULL;
-    }
-    
-    /* Verifica se há blocos de disco disponíveis */
-    int disk_block = alloc_disk_block();
-    if (disk_block == -1) {
-        pthread_mutex_unlock(&pager_mutex);
-        return NULL;
-    }
-    
-    /* Expande array de páginas se necessário */
-    if (proc->num_pages >= proc->max_pages) {
-        proc->max_pages *= 2;
-        proc->pages = realloc(proc->pages, proc->max_pages * sizeof(page_t));
-    }
-    
-    /* Calcula endereço virtual da nova página */
-    void *vaddr = (void *)(UVM_BASEADDR + proc->num_pages * PAGESIZE);
-    
-    /* Inicializa nova página */
-    page_t *page = &proc->pages[proc->num_pages];
-    page->vaddr = vaddr;
-    page->frame = -1;
-    page->disk_block = disk_block;
-    page->present = 0;
-    page->dirty = 0;
-    page->referenced = 0;
-    page->zero_filled = 0;
-    
-    proc->num_pages++;
-    
-    pthread_mutex_unlock(&pager_mutex);
-    return vaddr;
-}
-
-void pager_fault(pid_t pid, void *addr) {
-    pthread_mutex_lock(&pager_mutex);
-    
-    process_t *proc = find_process(pid);
-    if (!proc) {
-        pthread_mutex_unlock(&pager_mutex);
-        return;
-    }
-    
-    /* Encontra a página correspondente ao endereço */
-    intptr_t offset = (intptr_t)addr - UVM_BASEADDR;
-    int page_idx = offset / PAGESIZE;
-    
-    if (page_idx < 0 || page_idx >= proc->num_pages) {
-        pthread_mutex_unlock(&pager_mutex);
-        return;
-    }
-    
-    page_t *page = &proc->pages[page_idx];
-    
-    /* Verifica se a página já está presente */
-    if (page->present && page->frame != -1) {
-        /* Página presente, apenas atualiza permissões e marca como referenciada */
-        page->referenced = 1;
-        page->dirty = 1; /* Assume escrita, pois não sabemos o tipo de acesso */
-        mmu_chprot(pid, page->vaddr, PROT_READ | PROT_WRITE);
-        pthread_mutex_unlock(&pager_mutex);
-        return;
-    }
-    
-    /* Aloca um quadro de memória */
-    int frame = alloc_frame();
-    if (frame == -1) {
-        /* Não há quadros livres, precisa fazer eviction */
-        frame = evict_page();
-    }
-    
-    /* Atribui o quadro ao processo */
-    frame_owner[frame] = pid;
-    frame_page[frame] = page_idx;
-    page->frame = frame;
-    
-    /* Se a página nunca foi inicializada, preenche com zeros */
-    if (!page->zero_filled) {
-        mmu_zero_fill(frame);
-        page->zero_filled = 1;
-        page->dirty = 0; /* Página limpa após zero_fill */
-    } else {
-        /* Carrega página do disco */
-        mmu_disk_read(page->disk_block, frame);
-        page->dirty = 0; /* Página limpa após carregar do disco */
-    }
-    
-    /* Mapeia a página na memória com permissões iniciais apenas de leitura */
-    /* Isso permite detectar escritas na próxima falha */
-    page->present = 1;
-    page->referenced = 0; /* Começa sem referência, será marcada no próximo acesso */
-    mmu_resident(pid, page->vaddr, frame, PROT_READ);
-    
-    pthread_mutex_unlock(&pager_mutex);
-}
-
-int pager_syslog(pid_t pid, void *addr, size_t len) {
-    pthread_mutex_lock(&pager_mutex);
-    
-    process_t *proc = find_process(pid);
-    if (!proc) {
-        pthread_mutex_unlock(&pager_mutex);
-        errno = EINVAL;
-        return -1;
-    }
-    
-    /* Verifica se o endereço inicial está no espaço alocado */
-    intptr_t start = (intptr_t)addr;
-    intptr_t end = start + len - 1;
-    
-    if (start < UVM_BASEADDR || end >= UVM_BASEADDR + proc->num_pages * PAGESIZE) {
-        pthread_mutex_unlock(&pager_mutex);
-        errno = EINVAL;
-        return -1;
-    }
-    
-    /* Buffer temporário para armazenar dados */
-    char *buffer = malloc(len);
-    
-    /* Lê os dados byte a byte */
-    for (size_t i = 0; i < len; i++) {
-        intptr_t curr_addr = start + i;
-        int page_idx = (curr_addr - UVM_BASEADDR) / PAGESIZE;
-        int page_offset = (curr_addr - UVM_BASEADDR) % PAGESIZE;
-        
-        page_t *page = &proc->pages[page_idx];
-        
-        /* Se a página não está presente, precisa carregá-la */
-        if (!page->present || page->frame == -1) {
-            /* Libera mutex temporariamente para evitar deadlock */
-            pthread_mutex_unlock(&pager_mutex);
-            pager_fault(pid, (void *)(UVM_BASEADDR + page_idx * PAGESIZE));
-            pthread_mutex_lock(&pager_mutex);
-            
-            /* Re-valida o processo após reacquirir o lock */
-            proc = find_process(pid);
-            if (!proc) {
-                free(buffer);
-                pthread_mutex_unlock(&pager_mutex);
-                errno = EINVAL;
-                return -1;
-            }
-            page = &proc->pages[page_idx];
-        }
-        
-        /* Garante que temos um frame válido */
-        if (page->frame == -1 || !page->present) {
-            free(buffer);
-            pthread_mutex_unlock(&pager_mutex);
-            errno = EINVAL;
-            return -1;
-        }
-        
-        /* Lê o byte da memória física */
-        buffer[i] = pmem[page->frame * PAGESIZE + page_offset];
-    }
-    
-    /* Imprime em formato hexadecimal */
-    for (size_t i = 0; i < len; i++) {
-        printf("%02x", (unsigned char)buffer[i]);
-    }
-    
-    free(buffer);
-    pthread_mutex_unlock(&pager_mutex);
-    return 0;
-}
-
-void pager_destroy(pid_t pid) {
-    pthread_mutex_lock(&pager_mutex);
-    
-    process_t *proc = NULL;
-    int proc_idx = -1;
-    
-    /* Encontra o processo */
-    for (int i = 0; i < num_processes; i++) {
-        if (processes[i] && processes[i]->pid == pid) {
-            proc = processes[i];
-            proc_idx = i;
-            break;
-        }
-    }
-    
-    if (!proc) {
-        pthread_mutex_unlock(&pager_mutex);
-        return;
-    }
-    
-    /* Libera todos os recursos do processo */
-    for (int i = 0; i < proc->num_pages; i++) {
-        page_t *page = &proc->pages[i];
-        
-        /* Libera quadro de memória se alocado */
-        if (page->present && page->frame != -1) {
-            free_frame(page->frame);
-        }
-        
-        /* Libera bloco de disco */
-        if (page->disk_block != -1) {
-            free_disk_block(page->disk_block);
-        }
-    }
-    
-    /* Libera estruturas do processo */
-    free(proc->pages);
-    free(proc);
-    processes[proc_idx] = NULL;
-    
-    pthread_mutex_unlock(&pager_mutex);
-}
-
-/* Funções auxiliares */
-
-static process_t *find_process(pid_t pid) {
-    for (int i = 0; i < num_processes; i++) {
-        if (processes[i] && processes[i]->pid == pid) {
-            return processes[i];
+static ProcInfo *create_proc_entry(pid_t pid) {
+    for (int i = 0; i < MAX_PROCS; i++) {
+        if (!procs[i].used) {
+            procs[i].used = 1;
+            procs[i].pid = pid;
+            procs[i].npages = 0;
+            memset(procs[i].pages, 0, sizeof(procs[i].pages));
+            return &procs[i];
         }
     }
     return NULL;
 }
 
-static int alloc_frame(void) {
-    for (int i = 0; i < NFRAMES; i++) {
-        if (frame_owner[i] == -1) {
+static int alloc_block(pid_t pid, int page_index) {
+    for (int i = 0; i < g_nblocks; i++) {
+        if (!blocks[i].used) {
+            blocks[i].used = 1;
+            blocks[i].pid = pid;
+            blocks[i].page = page_index;
             return i;
         }
     }
     return -1;
 }
 
-static int alloc_disk_block(void) {
-    for (int i = 0; i < NBLOCKS; i++) {
-        if (!block_used[i]) {
-            block_used[i] = 1;
+static void free_block(int blk) {
+    if (blk < 0 || blk >= g_nblocks) return;
+    blocks[blk].used = 0;
+    blocks[blk].pid = 0;
+    blocks[blk].page = 0;
+}
+
+static int first_free_frame(void) {
+    for (int i = 0; i < g_nframes; i++) {
+        if (!frames[i].used)
             return i;
-        }
     }
     return -1;
 }
 
-static void free_frame(int frame) {
-    frame_owner[frame] = -1;
-    frame_page[frame] = -1;
+/* Escolhe vítima pelo algoritmo de segunda chance (clock). */
+static int choose_victim_frame(void) {
+    while (1) {
+        FrameInfo *f = &frames[clock_hand];
+
+        /* Se por acaso encontrar um frame livre, usa ele mesmo. */
+        if (!f->used) {
+            int idx = clock_hand;
+            clock_hand = (clock_hand + 1) % g_nframes;
+            return idx;
+        }
+
+        /* Se ref == 0, este frame pode ser vítima. */
+        if (f->ref == 0) {
+            int idx = clock_hand;
+            clock_hand = (clock_hand + 1) % g_nframes;
+            return idx;
+        }
+
+        /* Segunda chance: zera ref e tira permissão (PROT_NONE). */
+        ProcInfo *p = find_proc(f->pid);
+        if (p) {
+            void *vaddr = (void *)(UVM_BASEADDR +
+                                   (intptr_t)f->page * g_pagesize);
+            mmu_chprot(f->pid, vaddr, PROT_NONE);
+            f->prot = PROT_NONE;
+            f->ref = 0;
+        }
+
+        clock_hand = (clock_hand + 1) % g_nframes;
+    }
 }
 
-static void free_disk_block(int block) {
-    block_used[block] = 0;
+/* Evicta a página atualmente no frame `frame` para o disco. */
+static void evict_frame(int frame) {
+    FrameInfo *f = &frames[frame];
+    if (!f->used)
+        return;
+
+    ProcInfo *p = find_proc(f->pid);
+    if (!p)
+        return;
+
+    if (f->page < 0 || f->page >= MAX_PAGES)
+        return;
+
+    PageInfo *pg = &p->pages[f->page];
+    if (!pg->allocated || !pg->resident)
+        return;
+
+    void *vaddr = (void *)(UVM_BASEADDR +
+                           (intptr_t)f->page * g_pagesize);
+
+    /* O professor espera: primeiro NONRESIDENT, depois DISK_WRITE. */
+    mmu_nonresident(p->pid, vaddr);
+
+    /* Escreve em disco apenas se a página estiver suja. */
+    if (pg->dirty && pg->disk_block >= 0) {
+        mmu_disk_write(frame, pg->disk_block);
+        pg->in_disk = 1;
+        pg->dirty = 0;      /* disco agora tem a cópia atual */
+    }
+
+    pg->resident = 0;
+    pg->frame = -1;
+
+    f->used = 0;
+    f->pid = 0;
+    f->page = -1;
+    f->ref = 0;
+    f->prot = PROT_NONE;
 }
 
-static int evict_page(void) {
-    /* Algoritmo da segunda chance (clock) */
-    int iterations = 0;
-    int max_iterations = NFRAMES * 2; /* Evita loop infinito */
-    
-    while (iterations < max_iterations) {
-        int frame = clock_hand;
-        clock_hand = (clock_hand + 1) % NFRAMES;
-        iterations++;
-        
-        if (frame_owner[frame] == -1) {
-            /* Quadro livre, usa ele */
-            return frame;
+
+/* Garante que a página `page_index` do processo `p` esteja residente.
+ * Retorna o índice do frame físico que contém a página.  Esta função
+ * é usada tanto pelo pager_fault (para páginas não residentes) quanto
+ * pelo pager_syslog.  Ela se comporta como um acesso de LEITURA. */
+static int ensure_page_resident(ProcInfo *p, int page_index) {
+    PageInfo *pg = &p->pages[page_index];
+
+    /* Já residente: apenas marca como referenciada e, se estiver com
+     * PROT_NONE (segunda chance), restaura o prot adequado. */
+    if (pg->resident) {
+        int frame = pg->frame;
+        FrameInfo *f = &frames[frame];
+
+        if (f->prot == PROT_NONE) {
+            void *vaddr = (void *)(UVM_BASEADDR +
+                                   (intptr_t)page_index * g_pagesize);
+            int newprot = pg->dirty ? (PROT_READ | PROT_WRITE) : PROT_READ;
+            mmu_chprot(p->pid, vaddr, newprot);
+            f->prot = newprot;
         }
-        
-        pid_t owner_pid = frame_owner[frame];
-        int page_idx = frame_page[frame];
-        
-        process_t *proc = find_process(owner_pid);
-        if (!proc || page_idx >= proc->num_pages) {
-            /* Processo não existe mais ou página inválida, libera o quadro */
-            free_frame(frame);
-            return frame;
-        }
-        
-        page_t *page = &proc->pages[page_idx];
-        
-        /* Segunda chance: verifica bit de referência */
-        if (page->referenced) {
-            /* Dá segunda chance: limpa bit e remove permissões */
-            page->referenced = 0;
-            mmu_chprot(owner_pid, page->vaddr, PROT_NONE);
-            continue;
-        }
-        
-        /* Página escolhida para eviction */
-        
-        /* Se a página foi modificada, salva no disco */
-        if (page->dirty) {
-            mmu_disk_write(frame, page->disk_block);
-        }
-        
-        /* Remove mapeamento */
-        mmu_nonresident(owner_pid, page->vaddr);
-        page->present = 0;
-        page->frame = -1;
-        page->dirty = 0;
-        page->referenced = 0;
-        
-        /* Libera o quadro */
-        free_frame(frame);
-        
+
+        f->ref = 1;
         return frame;
     }
-    
-    /* Se chegou aqui, força eviction do frame atual */
-    int frame = clock_hand;
-    clock_hand = (clock_hand + 1) % NFRAMES;
-    
-    if (frame_owner[frame] != -1) {
-        pid_t owner_pid = frame_owner[frame];
-        int page_idx = frame_page[frame];
-        process_t *proc = find_process(owner_pid);
-        
-        if (proc && page_idx < proc->num_pages) {
-            page_t *page = &proc->pages[page_idx];
-            if (page->dirty) {
-                mmu_disk_write(frame, page->disk_block);
-            }
-            mmu_nonresident(owner_pid, page->vaddr);
-            page->present = 0;
-            page->frame = -1;
-            page->dirty = 0;
-            page->referenced = 0;
+
+    /* Precisa de frame novo. */
+    int frame = first_free_frame();
+    if (frame < 0) {
+        frame = choose_victim_frame();
+        evict_frame(frame);
+    }
+
+    /* Carrega conteúdo: se já existe em disco -> disk_read;
+     * caso contrário, página nova -> zero_fill. */
+    if (pg->in_disk && pg->disk_block >= 0) {
+        mmu_disk_read(pg->disk_block, frame);
+    } else {
+        mmu_zero_fill(frame);
+    }
+
+    void *vaddr = (void *)(UVM_BASEADDR +
+                           (intptr_t)page_index * g_pagesize);
+
+    /* Ao trazer a página para RAM pela primeira vez (ou após swap),
+     * começamos sempre com PROT_READ.  Escrever nela causará um novo
+     * page fault, onde marcaremos como suja e habilitaremos WRITE. */
+    mmu_resident(p->pid, vaddr, frame, PROT_READ);
+
+    FrameInfo *f = &frames[frame];
+    f->used = 1;
+    f->pid = p->pid;
+    f->page = page_index;
+    f->ref = 1;
+    f->prot = PROT_READ;
+
+    pg->resident = 1;
+    pg->frame = frame;
+    /* ao carregar de disco, o conteúdo está sincronizado → dirty = 0 */
+    pg->dirty = 0;
+
+    return frame;
+}
+
+/* ------------------------------------------------------------------ */
+/* Implementação das funções do pager                                 */
+/* ------------------------------------------------------------------ */
+
+void pager_init(int nframes, int nblocks) {
+    pthread_mutex_lock(&pager_lock);
+
+    g_nframes = nframes;
+    g_nblocks = nblocks;
+    g_pagesize = sysconf(_SC_PAGESIZE);
+
+    frames = calloc(g_nframes, sizeof(FrameInfo));
+    blocks = calloc(g_nblocks, sizeof(BlockInfo));
+    memset(procs, 0, sizeof(procs));
+    clock_hand = 0;
+
+    pthread_mutex_unlock(&pager_lock);
+}
+
+void pager_create(pid_t pid) {
+    pthread_mutex_lock(&pager_lock);
+
+    ProcInfo *p = find_proc(pid);
+    if (!p) {
+        create_proc_entry(pid);
+    }
+
+    pthread_mutex_unlock(&pager_lock);
+}
+
+void *pager_extend(pid_t pid) {
+    pthread_mutex_lock(&pager_lock);
+
+    ProcInfo *p = find_proc(pid);
+    if (!p) {
+        p = create_proc_entry(pid);
+        if (!p) {
+            pthread_mutex_unlock(&pager_lock);
+            errno = ENOMEM;
+            return NULL;
         }
     }
-    
-    free_frame(frame);
-    return frame;
+
+    if (p->npages >= MAX_PAGES) {
+        pthread_mutex_unlock(&pager_lock);
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    int page_index = p->npages;
+
+    int blk = alloc_block(pid, page_index);
+    if (blk < 0) {
+        pthread_mutex_unlock(&pager_lock);
+        errno = ENOSPC;
+        return NULL;
+    }
+
+    PageInfo *pg = &p->pages[page_index];
+    pg->allocated = 1;
+    pg->resident = 0;
+    pg->frame = -1;
+    pg->disk_block = blk;
+    pg->in_disk = 0;
+    pg->dirty = 0;
+
+    p->npages++;
+
+    void *vaddr = (void *)(UVM_BASEADDR +
+                           (intptr_t)page_index * g_pagesize);
+
+    pthread_mutex_unlock(&pager_lock);
+    return vaddr;
+}
+
+void pager_fault(pid_t pid, void *addr) {
+    pthread_mutex_lock(&pager_lock);
+
+    ProcInfo *p = find_proc(pid);
+    if (!p) {
+        pthread_mutex_unlock(&pager_lock);
+        return;
+    }
+
+    intptr_t a = (intptr_t)addr;
+    intptr_t offset = a - (intptr_t)UVM_BASEADDR;
+    if (offset < 0) {
+        pthread_mutex_unlock(&pager_lock);
+        return;
+    }
+
+    int page_index = (int)(offset / g_pagesize);
+    if (page_index < 0 || page_index >= p->npages) {
+        pthread_mutex_unlock(&pager_lock);
+        return;
+    }
+
+    PageInfo *pg = &p->pages[page_index];
+    if (!pg->allocated) {
+        pthread_mutex_unlock(&pager_lock);
+        return;
+    }
+
+    if (!pg->resident) {
+        /* Página ainda não residente: traz para RAM com PROT_READ. */
+        ensure_page_resident(p, page_index);
+        pthread_mutex_unlock(&pager_lock);
+        return;
+    }
+
+    /* Página já está residente: o fault veio de PROT_NONE (segunda
+     * chance) ou PROT_READ (primeira escrita). */
+    int frame = pg->frame;
+    FrameInfo *f = &frames[frame];
+
+    void *vaddr = (void *)(UVM_BASEADDR +
+                           (intptr_t)page_index * g_pagesize);
+
+    if (f->prot == PROT_NONE) {
+        /* Página teve segunda chance e foi tocada de novo:
+         * restaura prot conforme dirty. */
+        int newprot = pg->dirty ? (PROT_READ | PROT_WRITE) : PROT_READ;
+        mmu_chprot(pid, vaddr, newprot);
+        f->prot = newprot;
+        f->ref = 1;
+    } else if (f->prot == PROT_READ) {
+        /* Primeira escrita na página: marca como suja e habilita WRITE. */
+        mmu_chprot(pid, vaddr, PROT_READ | PROT_WRITE);
+        f->prot = PROT_READ | PROT_WRITE;
+        f->ref = 1;
+        pg->dirty = 1;
+    } else {
+        /* PROT_READ|PROT_WRITE: em teoria não deveríamos chegar aqui. */
+        f->ref = 1;
+    }
+
+    pthread_mutex_unlock(&pager_lock);
+}
+
+int pager_syslog(pid_t pid, void *addr, size_t len) {
+    pthread_mutex_lock(&pager_lock);
+
+    ProcInfo *p = find_proc(pid);
+    if (!p) {
+        pthread_mutex_unlock(&pager_lock);
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (len == 0) {
+        pthread_mutex_unlock(&pager_lock);
+        return 0;
+    }
+
+    intptr_t start = (intptr_t)addr;
+    intptr_t base  = (intptr_t)UVM_BASEADDR;
+    intptr_t limit = base + (intptr_t)p->npages * g_pagesize;
+
+    /* Verifica se [addr, addr+len) está dentro das páginas alocadas. */
+    if (start < base || start + (intptr_t)len > limit) {
+        pthread_mutex_unlock(&pager_lock);
+        errno = EINVAL;
+        return -1;
+    }
+
+    char *buf = malloc(len);
+    if (!buf) {
+        int err = errno;
+        pthread_mutex_unlock(&pager_lock);
+        errno = err;
+        return -1;
+    }
+
+    size_t pos = 0;
+    while (pos < len) {
+        intptr_t cur = start + (intptr_t)pos;
+        int page_index = (int)((cur - base) / g_pagesize);
+        int offset     = (int)((cur - base) % g_pagesize);
+
+        if (page_index < 0 || page_index >= p->npages) {
+            free(buf);
+            pthread_mutex_unlock(&pager_lock);
+            errno = EINVAL;
+            return -1;
+        }
+
+        int frame = ensure_page_resident(p, page_index);
+
+        size_t chunk = (size_t)(g_pagesize - offset);
+        if (chunk > len - pos)
+            chunk = len - pos;
+
+        const char *frame_base = pmem + (size_t)frame * g_pagesize;
+        memcpy(buf + pos, frame_base + offset, chunk);
+
+        pos += chunk;
+    }
+
+    pthread_mutex_unlock(&pager_lock);
+
+    /* Imprime os bytes em hexadecimal, como especificado. */
+    for (size_t i = 0; i < len; i++) {
+        printf("%02x", (unsigned char)buf[i]);
+    }
+
+    printf("\n");   // <<< ADICIONE ESTA LINHA
+
+    free(buf);
+    return 0;
+}
+
+void pager_destroy(pid_t pid) {
+    pthread_mutex_lock(&pager_lock);
+
+    ProcInfo *p = find_proc(pid);
+    if (!p) {
+        pthread_mutex_unlock(&pager_lock);
+        return;
+    }
+
+    for (int i = 0; i < p->npages; i++) {
+        PageInfo *pg = &p->pages[i];
+        if (!pg->allocated)
+            continue;
+
+        /* Libera frame na nossa estrutura (NÃO chama mmu_* aqui). */
+        if (pg->resident && pg->frame >= 0 && pg->frame < g_nframes) {
+            FrameInfo *f = &frames[pg->frame];
+            f->used = 0;
+            f->pid  = 0;
+            f->page = -1;
+            f->ref  = 0;
+            f->prot = PROT_NONE;
+        }
+
+        if (pg->disk_block >= 0)
+            free_block(pg->disk_block);
+
+        pg->allocated = 0;
+        pg->resident  = 0;
+        pg->frame     = -1;
+        pg->disk_block = -1;
+        pg->in_disk   = 0;
+        pg->dirty     = 0;
+    }
+
+    p->used = 0;
+    p->npages = 0;
+
+    pthread_mutex_unlock(&pager_lock);
 }
