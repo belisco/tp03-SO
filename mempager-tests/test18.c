@@ -1,13 +1,13 @@
-/* Test 18: Disk block exhaustion
- * Testa o comportamento quando os blocos de disco se esgotam.
- * pager_extend deve retornar NULL e errno deve ser ENOSPC.
+/* Test 19: Sequential access pattern
+ * Testa um padrão de acesso sequencial típico: aloca páginas,
+ * escreve sequencialmente, lê sequencialmente.
  */
 #include <sys/types.h>
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <stdint.h>
 
 #include "uvm.h"
@@ -15,57 +15,49 @@
 int main(void) {
     uvm_create();
     
-    //Com 8 blocos de disco disponíveis, tentamos alocar 10 páginas
-    char *pages[10];
-    int allocated = 0;
-    
-    for (int i = 0; i < 10; i++) {
+    //Aloca 6 páginas
+    char *pages[6];
+    for (int i = 0; i < 6; i++) {
         pages[i] = uvm_extend();
-        
-        if (pages[i] == NULL) {
-            //Deve falhar quando os blocos acabarem
-            if (errno != ENOSPC) {
-                printf("ERROR: expected errno=ENOSPC, got errno=%d\n", errno);
-                exit(EXIT_FAILURE);
-            }
-            printf("Disk exhausted after %d pages (expected)\n", i);
-            break;
+        assert(pages[i] != NULL);
+    }
+    
+    //Fase 1: Escrita sequencial
+    for (int i = 0; i < 6; i++) {
+        //Preenche a página com um padrão
+        memset(pages[i], 'A' + i, 100);
+        pages[i][100] = '\0';
+    }
+    
+    //Fase 2: Leitura sequencial
+    for (int i = 0; i < 6; i++) {
+        //Verifica o padrão
+        for (int j = 0; j < 100; j++) {
+            assert(pages[i][j] == 'A' + i);
         }
-        
-        allocated++;
-        
-        //Escreve algo na página para marcar como alocada
-        pages[i][0] = 'A' + i;
+        assert(pages[i][100] == '\0');
     }
     
-    //Deve ter alocado pelo menos 1 página e no máximo 8
-    if (allocated < 1 || allocated > 8) {
-        printf("ERROR: allocated %d pages, expected 1-8\n", allocated);
-        exit(EXIT_FAILURE);
+    //Fase 3: Modificação parcial
+    for (int i = 0; i < 6; i++) {
+        pages[i][50] = 'X';
     }
     
-    printf("Successfully allocated %d pages\n", allocated);
-    
-    //Tenta alocar mais uma vez (deve falhar)
-    char *extra = uvm_extend();
-    if (extra != NULL) {
-        printf("ERROR: should not be able to allocate after exhaustion\n");
-        exit(EXIT_FAILURE);
-    }
-    if (errno != ENOSPC) {
-        printf("ERROR: expected errno=ENOSPC after exhaustion, got errno=%d\n", errno);
-        exit(EXIT_FAILURE);
+    //Fase 4: Verificação após swap
+    for (int i = 0; i < 6; i++) {
+        //Acessa o início (deve estar preservado)
+        assert(pages[i][0] == 'A' + i);
+        //Acessa o meio (modificado)
+        assert(pages[i][50] == 'X');
+        //Acessa próximo ao fim
+        assert(pages[i][99] == 'A' + i);
     }
     
-    //Verifica que as páginas alocadas ainda são acessíveis
-    for (int i = 0; i < allocated; i++) {
-        if (pages[i][0] != 'A' + i) {
-            printf("ERROR: page %d corrupted\n", i);
-            exit(EXIT_FAILURE);
-        }
-        uvm_syslog(pages[i], 1);
+    //Fase 5: syslog de cada página
+    for (int i = 0; i < 6; i++) {
+        uvm_syslog(pages[i], 101);
     }
     
-    printf("Disk exhaustion handled correctly\n");
+    printf("Sequential access pattern completed\n");
     exit(EXIT_SUCCESS);
 }

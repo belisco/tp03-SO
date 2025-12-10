@@ -1,13 +1,12 @@
-/* Test 19: Sequential access pattern
- * Testa um padrão de acesso sequencial típico: aloca páginas,
- * escreve sequencialmente, lê sequencialmente.
+/* Test 20: Second chance algorithm with mixed access
+ * Testa especificamente o algoritmo de segunda chance com
+ * padrões de acesso que devem dar segunda chance a algumas páginas.
  */
 #include <sys/types.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdint.h>
 
 #include "uvm.h"
@@ -15,49 +14,54 @@
 int main(void) {
     uvm_create();
     
-    //Aloca 6 páginas
-    char *pages[6];
-    for (int i = 0; i < 6; i++) {
+    //Aloca 7 páginas (mais que os 4 frames)
+    char *pages[7];
+    for (int i = 0; i < 7; i++) {
         pages[i] = uvm_extend();
         assert(pages[i] != NULL);
+        pages[i][0] = '0' + i;
     }
     
-    //Fase 1: Escrita sequencial
-    for (int i = 0; i < 6; i++) {
-        //Preenche a página com um padrão
-        memset(pages[i], 'A' + i, 100);
-        pages[i][100] = '\0';
+    //Acessa páginas 0,1,2,3 - todas vão para frames
+    for (int i = 0; i < 4; i++) {
+        char c = pages[i][0];
+        assert(c == '0' + i);
     }
     
-    //Fase 2: Leitura sequencial
-    for (int i = 0; i < 6; i++) {
-        //Verifica o padrão
-        for (int j = 0; j < 100; j++) {
-            assert(pages[i][j] == 'A' + i);
-        }
-        assert(pages[i][100] == '\0');
+    //Acessa página 4 - deve causar eviction de página 0
+    pages[4][0] = '4';
+    
+    //Reacessa página 1,2,3 - elas ganham "segunda chance"
+    for (int i = 1; i < 4; i++) {
+        char c = pages[i][0];
+        assert(c == '0' + i);
     }
     
-    //Fase 3: Modificação parcial
-    for (int i = 0; i < 6; i++) {
-        pages[i][50] = 'X';
+    /* Acessa página 5 - deve evictar página 0 (se ainda não foi)
+       ou começar a dar segunda chance */
+    pages[5][0] = '5';
+    
+    //Acessa página 6 - continua o algoritmo de segunda chance
+    pages[6][0] = '6';
+    
+    //Agora reacessa todas na ordem reversa
+    for (int i = 6; i >= 0; i--) {
+        char c = pages[i][0];
+        assert(c == '0' + i);
     }
     
-    //Fase 4: Verificação após swap
-    for (int i = 0; i < 6; i++) {
-        //Acessa o início (deve estar preservado)
-        assert(pages[i][0] == 'A' + i);
-        //Acessa o meio (modificado)
-        assert(pages[i][50] == 'X');
-        //Acessa próximo ao fim
-        assert(pages[i][99] == 'A' + i);
+    //Modifica todas
+    for (int i = 0; i < 7; i++) {
+        pages[i][1] = 'X';
     }
     
-    //Fase 5: syslog de cada página
-    for (int i = 0; i < 6; i++) {
-        uvm_syslog(pages[i], 101);
+    //Verifica que as modificações persistiram
+    for (int i = 0; i < 7; i++) {
+        assert(pages[i][0] == '0' + i);
+        assert(pages[i][1] == 'X');
+        uvm_syslog(pages[i], 2);
     }
     
-    printf("Sequential access pattern completed\n");
+    printf("Second chance algorithm working correctly\n");
     exit(EXIT_SUCCESS);
 }
