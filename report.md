@@ -392,7 +392,7 @@ Implementação garante comportamento determinístico:
 
 ## 5. Testes Adicionais Desenvolvidos
 
-Desenvolvemos 8 testes adicionais (test13-test20) que cobrem casos extremos e edge cases não testados pelos testes fornecidos.
+Desenvolvemos 7 testes adicionais (test13-test19) que cobrem casos extremos e de borda não testados pelos testes fornecidos.
 
 ### 5.1 Test 13: Syslog Atravessando Múltiplas Páginas
 
