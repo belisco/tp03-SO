@@ -1,0 +1,282 @@
+mmu_init_disk: 32768 bytes in 8 blocks
+mmu_init_pmem: mmap fd 4 path mmu.pmem.img.oMYtqc
+mmu_init_pmem: 16384 bytes in 4 pages
+mmu_init_sock: unix socket 5 at mmu.sock
+mmu_init_sigs: SIGINT triggers shutdown
+mmu_accept_loop: accepting connection
+mmu_accept_loop: sock 6
+mmu_accept_loop: creating thread
+mmu_accept_loop: accepting connection
+mmu_client_thread sock 6 pid 0: recv
+mmu_client_create sock 6 pid 14270: create pid 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60000000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60000000 code 1
+mmu_zero_fill frame 0
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60000000 code 2
+mmu_chprot pid 0 vaddr 0x60000000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60001000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60001000 code 1
+mmu_zero_fill frame 1
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60001000 code 2
+mmu_chprot pid 0 vaddr 0x60001000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60002000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60002000 code 1
+mmu_zero_fill frame 2
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60002000 code 2
+mmu_chprot pid 0 vaddr 0x60002000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60003000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003000 code 1
+mmu_zero_fill frame 3
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003000 code 2
+mmu_chprot pid 0 vaddr 0x60003000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60004000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004000 code 1
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_write from frame 0 to block 0
+mmu_zero_fill frame 0
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004000 code 2
+mmu_chprot pid 0 vaddr 0x60004000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60005000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005000 code 1
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_write from frame 1 to block 1
+mmu_zero_fill frame 1
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005000 code 2
+mmu_chprot pid 0 vaddr 0x60005000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_extend sock 6 pid 14270: extend vaddr 0x60006000
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006000 code 1
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_write from frame 2 to block 2
+mmu_zero_fill frame 2
+mmu_resident pid 0 vaddr 0x60006000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006000 code 2
+mmu_chprot pid 0 vaddr 0x60006000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60000000 code 2
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_write from frame 3 to block 3
+mmu_disk_read from block 0 to frame 3
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60001000 code 2
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_chprot pid 0 vaddr 0x60006000 prot 0
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_write from frame 0 to block 4
+mmu_disk_read from block 1 to frame 0
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60002000 code 2
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_write from frame 1 to block 5
+mmu_disk_read from block 2 to frame 1
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003000 code 2
+mmu_nonresident pid 0 vaddr 0x60006000
+mmu_disk_write from frame 2 to block 6
+mmu_disk_read from block 3 to frame 2
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004000 code 2
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_read from block 4 to frame 3
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004000 code 2
+mmu_chprot pid 0 vaddr 0x60004000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005000 code 2
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_read from block 5 to frame 0
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005000 code 2
+mmu_chprot pid 0 vaddr 0x60005000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006000 code 2
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_read from block 6 to frame 1
+mmu_resident pid 0 vaddr 0x60006000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006000 code 2
+mmu_chprot pid 0 vaddr 0x60006000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004000 code 2
+mmu_chprot pid 0 vaddr 0x60004000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003000 code 2
+mmu_chprot pid 0 vaddr 0x60003000 prot 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60002000 code 2
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_chprot pid 0 vaddr 0x60006000 prot 0
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_read from block 2 to frame 2
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60001000 code 2
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_write from frame 3 to block 4
+mmu_disk_read from block 1 to frame 3
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60000000 code 2
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_write from frame 0 to block 5
+mmu_disk_read from block 0 to frame 0
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60000001 code 2
+mmu_chprot pid 0 vaddr 0x60000000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60001001 code 2
+mmu_chprot pid 0 vaddr 0x60001000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60002001 code 2
+mmu_chprot pid 0 vaddr 0x60002000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003001 code 2
+mmu_nonresident pid 0 vaddr 0x60006000
+mmu_disk_write from frame 1 to block 6
+mmu_disk_read from block 3 to frame 1
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003001 code 2
+mmu_chprot pid 0 vaddr 0x60003000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004001 code 2
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_write from frame 2 to block 2
+mmu_disk_read from block 4 to frame 2
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004001 code 2
+mmu_chprot pid 0 vaddr 0x60004000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005001 code 2
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_write from frame 3 to block 1
+mmu_disk_read from block 5 to frame 3
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005001 code 2
+mmu_chprot pid 0 vaddr 0x60005000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006001 code 2
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_write from frame 0 to block 0
+mmu_disk_read from block 6 to frame 0
+mmu_resident pid 0 vaddr 0x60006000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006001 code 2
+mmu_chprot pid 0 vaddr 0x60006000 prot 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60000000 code 2
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_write from frame 1 to block 3
+mmu_disk_read from block 0 to frame 1
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60000000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60001000 code 2
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_chprot pid 0 vaddr 0x60006000 prot 0
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_write from frame 2 to block 4
+mmu_disk_read from block 1 to frame 2
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60001000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60002000 code 2
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_write from frame 3 to block 5
+mmu_disk_read from block 2 to frame 3
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60002000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60003000 code 2
+mmu_nonresident pid 0 vaddr 0x60006000
+mmu_disk_write from frame 0 to block 6
+mmu_disk_read from block 3 to frame 0
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60003000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60004000 code 2
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_read from block 4 to frame 1
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 1
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60004000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60005000 code 2
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_read from block 5 to frame 2
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 2
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60005000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_segv sock 6 pid 14270: vaddr 0x60006000 code 2
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_read from block 6 to frame 3
+mmu_resident pid 0 vaddr 0x60006000 prot 1 frame 3
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_syslog sock 6 pid 14270: vaddr 0x60006000 len 2 retcode 0
+mmu_client_thread sock 6 pid 14270: recv
+mmu_client_exit sock 6 pid 14270: exiting cleanly
+mmu_client_thread sock 6 pid 14270: finished
+mmu_accept_loop: exiting
+mmu_destroy: starting

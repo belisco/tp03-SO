@@ -457,7 +457,7 @@ int pager_syslog(pid_t pid, void *addr, size_t len) {
         printf("%02x", (unsigned char)buf[i]);
     }
 
-    printf("\n");   // <<< ADICIONE ESTA LINHA
+    printf("\n");
 
     free(buf);
     return 0;

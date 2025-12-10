@@ -1,0 +1,194 @@
+pager_create pid 0
+pager_extend pid 0 vaddr 0x60000000
+pager_extend pid 0 vaddr 0x60001000
+pager_extend pid 0 vaddr 0x60002000
+pager_extend pid 0 vaddr 0x60003000
+pager_extend pid 0 vaddr 0x60004000
+pager_extend pid 0 vaddr 0x60005000
+pager_fault pid 0 vaddr 0x60000000
+mmu_zero_fill frame 0
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 0
+pager_fault pid 0 vaddr 0x60000000
+mmu_chprot pid 0 vaddr 0x60000000 prot 3
+pager_fault pid 0 vaddr 0x60001000
+mmu_zero_fill frame 1
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 1
+pager_fault pid 0 vaddr 0x60001000
+mmu_chprot pid 0 vaddr 0x60001000 prot 3
+pager_fault pid 0 vaddr 0x60002000
+mmu_zero_fill frame 2
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 2
+pager_fault pid 0 vaddr 0x60002000
+mmu_chprot pid 0 vaddr 0x60002000 prot 3
+pager_fault pid 0 vaddr 0x60003000
+mmu_zero_fill frame 3
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 3
+pager_fault pid 0 vaddr 0x60003000
+mmu_chprot pid 0 vaddr 0x60003000 prot 3
+pager_fault pid 0 vaddr 0x60004000
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_write from frame 0 to block 0
+mmu_zero_fill frame 0
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 0
+pager_fault pid 0 vaddr 0x60004000
+mmu_chprot pid 0 vaddr 0x60004000 prot 3
+pager_fault pid 0 vaddr 0x60005000
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_write from frame 1 to block 1
+mmu_zero_fill frame 1
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 1
+pager_fault pid 0 vaddr 0x60005000
+mmu_chprot pid 0 vaddr 0x60005000 prot 3
+pager_fault pid 0 vaddr 0x60000000
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_write from frame 2 to block 2
+mmu_disk_read from block 0 to frame 2
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 2
+pager_fault pid 0 vaddr 0x60001000
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_write from frame 3 to block 3
+mmu_disk_read from block 1 to frame 3
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 3
+pager_fault pid 0 vaddr 0x60002000
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_write from frame 0 to block 4
+mmu_disk_read from block 2 to frame 0
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 0
+pager_fault pid 0 vaddr 0x60003000
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_write from frame 1 to block 5
+mmu_disk_read from block 3 to frame 1
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 1
+pager_fault pid 0 vaddr 0x60004000
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_read from block 4 to frame 2
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 2
+pager_fault pid 0 vaddr 0x60005000
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_read from block 5 to frame 3
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 3
+pager_fault pid 0 vaddr 0x60000032
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_read from block 0 to frame 0
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 0
+pager_fault pid 0 vaddr 0x60000032
+mmu_chprot pid 0 vaddr 0x60000000 prot 3
+pager_fault pid 0 vaddr 0x60001032
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_read from block 1 to frame 1
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 1
+pager_fault pid 0 vaddr 0x60001032
+mmu_chprot pid 0 vaddr 0x60001000 prot 3
+pager_fault pid 0 vaddr 0x60002032
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_read from block 2 to frame 2
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 2
+pager_fault pid 0 vaddr 0x60002032
+mmu_chprot pid 0 vaddr 0x60002000 prot 3
+pager_fault pid 0 vaddr 0x60003032
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_read from block 3 to frame 3
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 3
+pager_fault pid 0 vaddr 0x60003032
+mmu_chprot pid 0 vaddr 0x60003000 prot 3
+pager_fault pid 0 vaddr 0x60004032
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_write from frame 0 to block 0
+mmu_disk_read from block 4 to frame 0
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 0
+pager_fault pid 0 vaddr 0x60004032
+mmu_chprot pid 0 vaddr 0x60004000 prot 3
+pager_fault pid 0 vaddr 0x60005032
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_write from frame 1 to block 1
+mmu_disk_read from block 5 to frame 1
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 1
+pager_fault pid 0 vaddr 0x60005032
+mmu_chprot pid 0 vaddr 0x60005000 prot 3
+pager_fault pid 0 vaddr 0x60000000
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_write from frame 2 to block 2
+mmu_disk_read from block 0 to frame 2
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 2
+pager_fault pid 0 vaddr 0x60001000
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_write from frame 3 to block 3
+mmu_disk_read from block 1 to frame 3
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 3
+pager_fault pid 0 vaddr 0x60002000
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_write from frame 0 to block 4
+mmu_disk_read from block 2 to frame 0
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 0
+pager_fault pid 0 vaddr 0x60003000
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_write from frame 1 to block 5
+mmu_disk_read from block 3 to frame 1
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 1
+pager_fault pid 0 vaddr 0x60004000
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_read from block 4 to frame 2
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 2
+pager_fault pid 0 vaddr 0x60005000
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_read from block 5 to frame 3
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 3
+pager_syslog pid 0 0x60000000
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_chprot pid 0 vaddr 0x60004000 prot 0
+mmu_chprot pid 0 vaddr 0x60005000 prot 0
+mmu_nonresident pid 0 vaddr 0x60002000
+mmu_disk_read from block 0 to frame 0
+mmu_resident pid 0 vaddr 0x60000000 prot 1 frame 0
+4141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141584141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414100
+pager_syslog pid 0 0x60001000
+mmu_nonresident pid 0 vaddr 0x60003000
+mmu_disk_read from block 1 to frame 1
+mmu_resident pid 0 vaddr 0x60001000 prot 1 frame 1
+4242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242584242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424200
+pager_syslog pid 0 0x60002000
+mmu_nonresident pid 0 vaddr 0x60004000
+mmu_disk_read from block 2 to frame 2
+mmu_resident pid 0 vaddr 0x60002000 prot 1 frame 2
+4343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343584343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434300
+pager_syslog pid 0 0x60003000
+mmu_nonresident pid 0 vaddr 0x60005000
+mmu_disk_read from block 3 to frame 3
+mmu_resident pid 0 vaddr 0x60003000 prot 1 frame 3
+4444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444584444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444400
+pager_syslog pid 0 0x60004000
+mmu_chprot pid 0 vaddr 0x60000000 prot 0
+mmu_chprot pid 0 vaddr 0x60001000 prot 0
+mmu_chprot pid 0 vaddr 0x60002000 prot 0
+mmu_chprot pid 0 vaddr 0x60003000 prot 0
+mmu_nonresident pid 0 vaddr 0x60000000
+mmu_disk_read from block 4 to frame 0
+mmu_resident pid 0 vaddr 0x60004000 prot 1 frame 0
+4545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545584545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454500
+pager_syslog pid 0 0x60005000
+mmu_nonresident pid 0 vaddr 0x60001000
+mmu_disk_read from block 5 to frame 1
+mmu_resident pid 0 vaddr 0x60005000 prot 1 frame 1
+4646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646584646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464600
+pager_destroy pid 0

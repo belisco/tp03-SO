@@ -24,6 +24,14 @@ all:
 	gcc $(CFLAGS) mempager-tests/test10.c uvm.a -o bin/test10 -lpthread
 	gcc $(CFLAGS) mempager-tests/test11.c uvm.a -o bin/test11 -lpthread
 	gcc $(CFLAGS) mempager-tests/test12.c uvm.a -o bin/test12 -lpthread
+	gcc $(CFLAGS) mempager-tests/test13.c uvm.a -o bin/test13 -lpthread
+	gcc $(CFLAGS) mempager-tests/test14.c uvm.a -o bin/test14 -lpthread
+	gcc $(CFLAGS) mempager-tests/test15.c uvm.a -o bin/test15 -lpthread
+	gcc $(CFLAGS) mempager-tests/test16.c uvm.a -o bin/test16 -lpthread
+	gcc $(CFLAGS) mempager-tests/test17.c uvm.a -o bin/test17 -lpthread
+	gcc $(CFLAGS) mempager-tests/test18.c uvm.a -o bin/test18 -lpthread
+	gcc $(CFLAGS) mempager-tests/test19.c uvm.a -o bin/test19 -lpthread
+	gcc $(CFLAGS) mempager-tests/test20.c uvm.a -o bin/test20 -lpthread
 	gcc $(CFLAGS) src/pager.c mmu.a -o bin/mmu -lpthread
 	rm -f uvm.a mmu.a
 
